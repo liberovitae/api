@@ -1,0 +1,20 @@
+p Hi #{username},
+p The following #{type}s were found matching your #{alert.frequency} "#{alert.name}" #{type} alert subscription:
+
+div
+    each item in items
+           p --- #{item.title} ---
+            br
+            | Location: #{item.location.name}
+            br
+            | Keywords: #{item.tags}
+            br
+            | View #{type}: 
+            a(href=hostname + `/${type}/` + item.slug) #{hostname}/#{type}/#{item.slug}
+
+p To manage your #{type} alerts please visit: 
+    a(href=hostname + '/account/alerts') #{hostname}/account/alerts
+
+
+p Cheers, 
+| All at #{sitename}

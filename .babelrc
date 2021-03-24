@@ -1,0 +1,49 @@
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "node": "current"
+        }
+      }
+    ]
+  ],
+  "env": {
+    "production": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "node": "current"
+            }
+          }
+        ]
+      ],
+      "plugins": [
+        "@babel/plugin-proposal-object-rest-spread",
+        "babel-plugin-groundskeeper-willie",
+        "object-to-json-parse",
+        "closure-elimination"
+      ]
+    },
+    "development": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "node": "current"
+            }
+          }
+        ]
+      ],
+      "plugins": [
+        "@babel/plugin-proposal-object-rest-spread",
+        "object-to-json-parse",
+        "closure-elimination"
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+p Hi,
+p You're receiving this email because you requested a password reset for your user account at #{sitename}.
+p Please go to the following page and choose a new password 
+a(href=hostname + '/account/reset/' + token) #{hostname}/account/reset/#{token}
+br
+p If you didn't ask to reset your password, you can ignore this email.
+
+
+
+p Thanks, 
+| All at #{sitename}

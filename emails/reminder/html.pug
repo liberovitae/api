@@ -1,0 +1,9 @@
+p Hi,
+p You're receiving this email because you requested a reminder for: #{title} @ #{location}.
+p Click the link below to view #{type} details. 
+a(href=hostname + `/${type}/` + item.slug) #{hostname}/#{type}/#{item.slug}
+br
+
+
+p Thanks, 
+| All at #{sitename}
