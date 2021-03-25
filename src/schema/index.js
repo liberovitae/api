@@ -8,6 +8,7 @@ import alertSchema from './alert';
 import locationSchema from './location';
 import blogSchema from './blog';
 import venueSchema from './venue';
+import eventSchema from './event';
 import statsSchema from './stats';
 
 const linkSchema = gql`
@@ -37,5 +38,6 @@ export default [
   locationSchema,
   blogSchema,
   venueSchema,
+  eventSchema,
   statsSchema,
 ];

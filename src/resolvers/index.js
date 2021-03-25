@@ -7,6 +7,7 @@ import uploadResolvers from './upload';
 import alertResolvers from './alert';
 import blogResolvers from './blog';
 import venueResolvers from './venue';
+import eventResolvers from './event';
 import statsResolvers from './stats';
 
 const customScalarResolver = {
@@ -23,5 +24,6 @@ export default [
   alertResolvers,
   blogResolvers,
   venueResolvers,
+  eventResolvers,
   statsResolvers,
 ];

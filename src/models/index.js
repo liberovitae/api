@@ -7,6 +7,7 @@ import Task from './task';
 import Alert from './alert';
 import Blog from './blog';
 import Venue from './venue';
+import Event from './event';
 
 mongoose.set(
   'debug',
@@ -32,6 +33,7 @@ const models = {
   Alert,
   Blog,
   Venue,
+  Event,
 };
 
 export { connectDb };
