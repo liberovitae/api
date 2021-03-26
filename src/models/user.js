@@ -132,6 +132,7 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: 'en',
       },
+      timezone: String,
     },
     lastLogin: Date,
   },

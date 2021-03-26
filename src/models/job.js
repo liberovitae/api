@@ -6,7 +6,6 @@ import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import beautifyUnique from 'mongoose-beautiful-unique-validation';
 import { jobTypes } from '../constants/jobTypes';
-import regions from '../constants/regions';
 
 function tagLimit(val) {
   return val.length <= 10;
@@ -56,13 +55,6 @@ const jobSchema = new mongoose.Schema(
       lat: Number,
       lon: Number,
     },
-    regions: {
-      type: [String],
-      enum: regions,
-      required: true,
-      index: true,
-    },
-
     url: {
       type: String,
       required: true,
@@ -124,7 +116,7 @@ jobSchema.plugin(mongoosePaginate);
 jobSchema.plugin(beautifyUnique);
 
 jobSchema.statics.search = async function (
-  { keywords, location, regions, types },
+  { keywords, location, types },
   limit,
   cursor,
 ) {
@@ -136,7 +128,6 @@ jobSchema.statics.search = async function (
 
   let keywordsQuery;
   let typesQuery;
-  let regionsQuery;
 
   keywords.length
     ? (keywordsQuery = {
@@ -160,18 +151,6 @@ jobSchema.statics.search = async function (
       })
     : null;
 
-  regions.length
-    ? (regionsQuery = {
-        regions: {
-          $not: {
-            $elemMatch: {
-              $nin: regions,
-            },
-          },
-        },
-      })
-    : null;
-
   const searchAggregate = this.aggregate([
     {
       $match: {
@@ -181,9 +160,6 @@ jobSchema.statics.search = async function (
             $and: [
               {
                 ...typesQuery,
-              },
-              {
-                ...regionsQuery,
               },
             ],
           },
@@ -235,7 +211,6 @@ jobSchema.index({
   tags: 'text',
   'location.name': 'text',
   'location.countryName': 'text',
-  regions: 'text',
   types: 'text',
   publishedAt: 1,
   status: 1,

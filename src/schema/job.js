@@ -22,7 +22,6 @@ export default gql`
   input JobFilterInput {
     keywords: String
     location: JobLocationInput
-    regions: [String]
     types: [String]
   }
 
@@ -31,7 +30,6 @@ export default gql`
     location: JobLocationInput!
     description: String!
     url: String!
-    regions: [String!]
     types: [String!]
     tags: [String!]
     status: String!
@@ -55,7 +53,6 @@ export default gql`
     location: JobLocation!
     description: String!
     url: String!
-    regions: [String!]
     types: [String!]
     tags: [String!]
     createdAt: Date!

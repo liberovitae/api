@@ -20,7 +20,6 @@ export default gql`
     slug: String!
     keywords: String
     location: String
-    regions: [String]
     types: [String]
     frequency: String!
     active: Boolean!
@@ -41,7 +40,6 @@ export default gql`
     alertType: String!
     keywords: String
     location: String
-    regions: [String]
     types: [String]
     frequency: String!
     active: Boolean!

@@ -5,7 +5,6 @@ import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import beautifyUnique from 'mongoose-beautiful-unique-validation';
 import { eventTypes } from '../constants/eventTypes';
-import regions from '../constants/regions';
 
 function tagLimit(val) {
   return val.length <= 10;
@@ -33,7 +32,10 @@ const eventSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-
+    dates: {
+      start: Date,
+      end: Date,
+    },
     description: {
       type: String,
       required: true,
@@ -49,12 +51,6 @@ const eventSchema = new mongoose.Schema(
       countryName: { type: String, trim: true, index: true },
       lat: Number,
       lon: Number,
-    },
-    regions: {
-      type: [String],
-      enum: regions,
-      required: true,
-      index: true,
     },
 
     url: {
@@ -110,7 +106,7 @@ eventSchema.plugin(mongoosePaginate);
 eventSchema.plugin(beautifyUnique);
 
 eventSchema.statics.search = async function (
-  { keywords, location, regions, types },
+  { keywords, location, types },
   limit,
   cursor,
 ) {
@@ -122,7 +118,6 @@ eventSchema.statics.search = async function (
 
   let keywordsQuery;
   let typesQuery;
-  let regionsQuery;
 
   keywords.length
     ? (keywordsQuery = {
@@ -146,18 +141,6 @@ eventSchema.statics.search = async function (
       })
     : null;
 
-  regions.length
-    ? (regionsQuery = {
-        regions: {
-          $not: {
-            $elemMatch: {
-              $nin: regions,
-            },
-          },
-        },
-      })
-    : null;
-
   const searchAggregate = this.aggregate([
     {
       $match: {
@@ -167,9 +150,6 @@ eventSchema.statics.search = async function (
             $and: [
               {
                 ...typesQuery,
-              },
-              {
-                ...regionsQuery,
               },
             ],
           },
@@ -209,7 +189,6 @@ eventSchema.index({
   tags: 'text',
   'location.name': 'text',
   'location.countryName': 'text',
-  regions: 'text',
   types: 'text',
   publishedAt: 1,
   status: 1,

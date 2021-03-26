@@ -19,9 +19,6 @@ const alertSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    regions: {
-      type: Array,
-    },
     types: {
       type: Array,
     },

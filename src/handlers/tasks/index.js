@@ -50,19 +50,12 @@ export const TaskHandler = async ({ input }) => {
 
       if (task.type === 'alert') {
         const { alert } = task;
-        const {
-          keywords,
-          types,
-          regions,
-          location,
-          alertType,
-        } = alert;
+        const { keywords, types, location, alertType } = alert;
 
         let items;
 
         let keywordsQuery;
         let typesQuery;
-        let regionsQuery;
         let locationQuery;
 
         keywords.length
@@ -87,18 +80,6 @@ export const TaskHandler = async ({ input }) => {
             })
           : null;
 
-        regions.length
-          ? (regionsQuery = {
-              regions: {
-                $not: {
-                  $elemMatch: {
-                    $nin: regions,
-                  },
-                },
-              },
-            })
-          : null;
-
         location.length
           ? (locationQuery = {
               'location.name': {
@@ -112,7 +93,6 @@ export const TaskHandler = async ({ input }) => {
           items = await searchJobs({
             keywordsQuery,
             typesQuery,
-            regionsQuery,
             locationQuery,
             task,
           });
@@ -122,7 +102,6 @@ export const TaskHandler = async ({ input }) => {
           items = await searchVenues({
             keywordsQuery,
             typesQuery,
-            regionsQuery,
             locationQuery,
             task,
           });

@@ -1,7 +1,6 @@
 import models from '../models';
 import jobTypes from '../constants/jobTypes';
 import venueTypes from '../constants/venueTypes';
-import regions from '../constants/regions';
 import cities from 'all-the-cities';
 import faker from 'faker';
 import generateSlug from './generateSlug';
@@ -102,7 +101,6 @@ const createFakeJob = async (user, company) => {
       </p>
       <p>Contact: ${faker.internet.email()} or ${faker.phone.phoneNumber()}
       `,
-      regions: regions[Math.floor(Math.random() * regions.length)],
       types: jobTypes[Math.floor(Math.random() * jobTypes.length)],
       url:
         Math.random() < 0.5
@@ -177,7 +175,6 @@ const createFakeVenue = async (user) => {
       </p>
       <p>Contact: ${faker.internet.email()} or ${faker.phone.phoneNumber()}
       `,
-      regions: regions[Math.floor(Math.random() * regions.length)],
       types:
         venueTypes[Math.floor(Math.random() * venueTypes.length)],
       url:

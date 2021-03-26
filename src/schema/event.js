@@ -22,7 +22,6 @@ export default gql`
   input EventFilterInput {
     keywords: String
     location: EventLocationInput
-    regions: [String]
     types: [String]
   }
 
@@ -32,7 +31,6 @@ export default gql`
     logo: String
     description: String!
     url: String!
-    regions: [String!]
     types: [String!]
     tags: [String!]
     status: String!
@@ -50,7 +48,6 @@ export default gql`
     location: EventLocation!
     description: String!
     url: String!
-    regions: [String!]
     types: [String!]
     tags: [String!]
     createdAt: Date!

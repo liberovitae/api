@@ -3,7 +3,6 @@ import models from '../../models';
 const searchJobs = async ({
   keywordsQuery,
   typesQuery,
-  regionsQuery,
   locationQuery,
   task,
 }) => {
@@ -16,9 +15,6 @@ const searchJobs = async ({
             $and: [
               {
                 ...typesQuery,
-              },
-              {
-                ...regionsQuery,
               },
             ],
           },

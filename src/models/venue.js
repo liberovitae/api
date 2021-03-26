@@ -5,7 +5,6 @@ import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import beautifyUnique from 'mongoose-beautiful-unique-validation';
 import { venueTypes } from '../constants/venueTypes';
-import regions from '../constants/regions';
 
 function tagLimit(val) {
   return val.length <= 10;
@@ -49,12 +48,6 @@ const venueSchema = new mongoose.Schema(
       countryName: { type: String, trim: true, index: true },
       lat: Number,
       lon: Number,
-    },
-    regions: {
-      type: [String],
-      enum: regions,
-      required: true,
-      index: true,
     },
 
     url: {
@@ -109,7 +102,7 @@ venueSchema.plugin(mongoosePaginate);
 venueSchema.plugin(beautifyUnique);
 
 venueSchema.statics.search = async function (
-  { keywords, location, regions, types },
+  { keywords, location, types },
   limit,
   cursor,
 ) {
@@ -121,7 +114,6 @@ venueSchema.statics.search = async function (
 
   let keywordsQuery;
   let typesQuery;
-  let regionsQuery;
 
   keywords.length
     ? (keywordsQuery = {
@@ -145,18 +137,6 @@ venueSchema.statics.search = async function (
       })
     : null;
 
-  regions.length
-    ? (regionsQuery = {
-        regions: {
-          $not: {
-            $elemMatch: {
-              $nin: regions,
-            },
-          },
-        },
-      })
-    : null;
-
   const searchAggregate = this.aggregate([
     {
       $match: {
@@ -166,9 +146,6 @@ venueSchema.statics.search = async function (
             $and: [
               {
                 ...typesQuery,
-              },
-              {
-                ...regionsQuery,
               },
             ],
           },
@@ -208,7 +185,6 @@ venueSchema.index({
   tags: 'text',
   'location.name': 'text',
   'location.countryName': 'text',
-  regions: 'text',
   types: 'text',
   publishedAt: 1,
   status: 1,
