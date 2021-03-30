@@ -16,11 +16,14 @@ mongoose.set(
 
 const connectDb = () => {
   if (process.env.DATABASE_URL) {
-    return mongoose.connect(process.env.DATABASE_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useCreateIndex: true,
-    });
+    return mongoose.connect(
+      `${process.env.DATABASE_HOST}/${process.env.DATABASE_NAME}`,
+      {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        useCreateIndex: true,
+      },
+    );
   }
 };
 

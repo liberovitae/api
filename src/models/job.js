@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
-import isEmail from 'validator/lib/isEmail';
-import isUrl from 'validator/lib/isURL';
+import { isEmail, isUrl } from 'validator';
 import moment from 'moment';
 import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
 import mongoosePaginate from 'mongoose-paginate-v2';
@@ -32,13 +31,13 @@ const jobSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    company: {
+    parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Company',
       required: true,
       name: String,
     },
-    companyName: { type: String, required: true }, // Keep this for text search on company name as well (mongoDB limitation)
+    parentName: { type: String, required: true }, // Keep this for text search on parent name..
     description: {
       type: String,
       required: true,
@@ -73,11 +72,6 @@ const jobSchema = new mongoose.Schema(
       type: Array,
       required: true,
       validate: [tagLimit, '{PATH} exceeds the limit of 10'],
-    },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
     },
     status: {
       type: String,
@@ -177,20 +171,20 @@ jobSchema.statics.search = async function (
     {
       $lookup: {
         from: 'companies',
-        localField: 'company',
+        localField: 'parent',
         foreignField: '_id',
-        as: 'company',
+        as: 'parent',
       },
     },
 
-    { $unwind: '$company' },
+    { $unwind: '$parent' },
 
     { $sort: { featured: -1, publishedAt: -1 } },
     {
       $project: {
         id: 1,
         title: 1,
-        company: 1,
+        parent: 1,
         slug: 1,
         tags: 1,
         types: 1,
@@ -206,7 +200,7 @@ jobSchema.statics.search = async function (
 };
 
 jobSchema.index({
-  companyName: 'text',
+  parentName: 'text',
   title: 'text',
   tags: 'text',
   'location.name': 'text',

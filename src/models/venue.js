@@ -32,7 +32,6 @@ const venueSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-
     description: {
       type: String,
       required: true,
@@ -49,7 +48,6 @@ const venueSchema = new mongoose.Schema(
       lat: Number,
       lon: Number,
     },
-
     url: {
       type: String,
       trim: true,
@@ -79,11 +77,10 @@ const venueSchema = new mongoose.Schema(
       default: 'draft',
     },
     featured: Boolean,
-    logo: String,
-    events: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
-    },
+    image: String,
+    children: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
+    ],
     publishedAt: { type: Date },
     stats: {
       views: { type: Number, default: 0 },
@@ -165,7 +162,7 @@ venueSchema.statics.search = async function (
       $project: {
         id: 1,
         title: 1,
-        logo: 1,
+        image: 1,
         slug: 1,
         tags: 1,
         types: 1,
@@ -179,6 +176,10 @@ venueSchema.statics.search = async function (
 
   return await this.aggregatePaginate(searchAggregate, options);
 };
+
+venueSchema.pre('remove', function (next) {
+  this.model('Event').deleteMany({ parent: this._id }, next);
+});
 
 venueSchema.index({
   title: 'text',

@@ -86,6 +86,23 @@ const userSchema = new mongoose.Schema(
           },
         },
       ],
+      events: [
+        {
+          _id: false,
+          event: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Event',
+          },
+          reminder: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Reminder',
+          },
+          createdAt: {
+            type: Date,
+            default: new Date(),
+          },
+        },
+      ],
     },
     alerts: {
       jobs: [
@@ -96,6 +113,13 @@ const userSchema = new mongoose.Schema(
         },
       ],
       venues: [
+        {
+          _id: false,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Alert',
+        },
+      ],
+      events: [
         {
           _id: false,
           type: mongoose.Schema.Types.ObjectId,
@@ -154,7 +178,6 @@ userSchema.statics.findByLogin = async function (login) {
 };
 
 userSchema.pre('remove', function (next) {
-  this.model('Job').deleteMany({ userId: this._id }, next);
   this.model('Venue').deleteMany({ userId: this._id }, next);
   this.model('Company').deleteOne({ userId: this._id }, next);
   this.model('Task').deleteMany({ userId: this._id }, next);

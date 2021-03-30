@@ -20,6 +20,11 @@ const urlValidator = (value) => {
 
 const eventSchema = new mongoose.Schema(
   {
+    parent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Venue',
+      required: true,
+    },
     title: {
       type: String,
       required: true,
@@ -33,8 +38,8 @@ const eventSchema = new mongoose.Schema(
       index: true,
     },
     dates: {
-      start: Date,
-      end: Date,
+      start: { type: Date, required: true },
+      end: { type: Date, required: true },
     },
     description: {
       type: String,
@@ -71,23 +76,14 @@ const eventSchema = new mongoose.Schema(
       required: true,
       validate: [tagLimit, '{PATH} exceeds the limit of 10'],
     },
-    venueId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Venue',
-      required: true,
-    },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
+
     status: {
       type: String,
       enum: ['draft', 'published', 'inactive'],
       default: 'draft',
     },
     featured: Boolean,
-    logo: String,
+    image: String,
     publishedAt: { type: Date },
     stats: {
       views: { type: Number, default: 0 },
@@ -164,13 +160,26 @@ eventSchema.statics.search = async function (
       },
     },
 
+    {
+      $lookup: {
+        from: 'venues',
+        localField: 'parent',
+        foreignField: '_id',
+        as: 'parent',
+      },
+    },
+
+    { $unwind: '$parent' },
+
     { $sort: { featured: -1, publishedAt: -1 } },
     {
       $project: {
         id: 1,
         title: 1,
-        logo: 1,
+        'parent.title': 1,
+        image: 1,
         slug: 1,
+        dates: 1,
         tags: 1,
         types: 1,
         location: 1,

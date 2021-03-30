@@ -3,17 +3,17 @@ import beautifyUnique from 'mongoose-beautiful-unique-validation';
 
 const companySchema = new mongoose.Schema(
   {
-    name: {
+    title: {
       type: String,
       required: true,
       unique: 'Company name must be unique',
     },
     website: String,
-    logo: String,
+    image: String,
     tagline: String,
     twitter: String,
     linkedin: String,
-    jobs: [
+    children: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job',
@@ -37,7 +37,11 @@ const Company = mongoose.model('Company', companySchema);
 companySchema.plugin(beautifyUnique);
 
 companySchema.index({
-  name: 'text',
+  title: 'text',
+});
+
+companySchema.pre('remove', function (next) {
+  this.model('Job').deleteMany({ parent: this._id }, next);
 });
 
 Company.createIndexes();

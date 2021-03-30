@@ -6,7 +6,7 @@ const alertSchema = new mongoose.Schema(
       type: String,
       enum: ['job', 'venue'],
     },
-    name: {
+    title: {
       type: String,
       required: true,
       trim: true,
