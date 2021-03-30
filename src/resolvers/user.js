@@ -216,6 +216,9 @@ export default {
                   path: 'venue',
                 },
               },
+            })
+            .populate({
+              path: 'saved',
               populate: {
                 path: 'events',
                 options: { sort: { createdAt: -1 } },
