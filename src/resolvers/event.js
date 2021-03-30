@@ -49,8 +49,9 @@ export default {
             { status: 'published' },
             {
               sort: { featured: -1, publishedAt: -1 },
+              populate: 'parent',
               select:
-                'id title slug logo tags types location status publishedAt featured',
+                'id title dates slug parent image tags types location status publishedAt featured',
               limit: limit,
               page: cursor || 1,
               lean: true,
@@ -86,7 +87,9 @@ export default {
           : info.cacheControl.setCacheHint({ maxAge: 0 });
         const event = await models.Event.findOne({
           slug: slug,
-        }).lean();
+        })
+          .populate('parent')
+          .lean();
         return event;
       } catch (err) {
         console.log(err);
@@ -133,11 +136,15 @@ export default {
             userId: me.id,
           });
 
-          const user = await models.User.findByIdAndUpdate(me.id, {
-            $addToSet: { events: event.id },
-          });
+          const venue = await models.Venue.findByIdAndUpdate(
+            input.parent,
+            {
+              $addToSet: { children: event.id },
+            },
+          );
 
-          return await event;
+          if (event && venue) return event;
+          return false;
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -148,7 +155,6 @@ export default {
     updateEvent: combineResolvers(
       isAuthenticated,
       isVerified,
-      isEventOwner,
       async (parent, args, context, info) => {
         try {
           const { id, input } = args;
@@ -184,7 +190,6 @@ export default {
     setEventStatus: combineResolvers(
       isAuthenticated,
       isVerified,
-      isEventOwner,
       async (parent, args, context, info) => {
         try {
           const { id, status } = args;
@@ -222,7 +227,14 @@ export default {
         try {
           const event = await models.Event.findById(id);
 
-          if (event) {
+          const venue = await models.Venue.findByIdAndUpdate(
+            event.parent,
+            {
+              $pull: { children: event.id },
+            },
+          );
+
+          if (event && venue) {
             await event.remove();
             return true;
           } else {

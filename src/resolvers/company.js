@@ -18,13 +18,13 @@ export default {
       isAuthenticated,
       async (
         parent,
-        { name, logo, website, tagline, twitter, linkedin },
+        { title, image, website, tagline, twitter, linkedin },
         { models, me },
       ) => {
         try {
           const company = await models.Company.create({
-            name,
-            logo,
+            title,
+            image,
             website,
             tagline,
             twitter,
@@ -73,23 +73,23 @@ export default {
       isCompanyOwner,
       async (
         parent,
-        { id, name, logo, website, tagline, twitter, linkedin },
+        { id, title, image, website, tagline, twitter, linkedin },
         { models },
       ) => {
         try {
           const company = await models.Company.findByIdAndUpdate(id, {
-            name: name,
-            logo: logo,
+            title: title,
+            image: image,
             website: website,
             tagline: tagline,
             twitter: twitter,
             linkedin: linkedin,
           });
 
-          if (company.name !== name) {
+          if (company.title !== title) {
             await models.Job.updateMany(
-              { companyName: company.name },
-              { companyName: name },
+              { parentName: company.title },
+              { parentName: title },
             );
           }
 

@@ -52,7 +52,7 @@ export default {
       async (parent, args, { models }) => {
         try {
           const { limit } = args;
-          return await models.User.find().limit(limit);
+          return await models.User.find().limit(limit).lean();
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -61,7 +61,7 @@ export default {
     ),
     user: async (parent, { id }, { models }) => {
       try {
-        return await models.User.findById(id);
+        return await models.User.findById(id).lean();
       } catch (err) {
         console.log(err);
         throw new ApolloError(err);
@@ -72,9 +72,9 @@ export default {
         if (!me) {
           return null;
         }
-        const user = await models.User.findById(me.id).populate(
-          'company',
-        );
+        const user = await models.User.findById(me.id)
+          .populate('company venues')
+          .lean();
 
         return user;
       } catch (err) {
@@ -90,9 +90,9 @@ export default {
             return false;
           }
 
-          const user = await models.User.findById(me.id).populate(
-            'company',
-          );
+          const user = await models.User.findById(me.id)
+            .populate('company')
+            .lean();
 
           if (user) {
             return {
@@ -131,7 +131,8 @@ export default {
             userId: me.id,
           })
             .populate('company')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
           return meJobs;
         } catch (err) {
@@ -149,9 +150,35 @@ export default {
           }
           const meVenues = await models.Venue.find({
             userId: me.id,
-          }).sort({ createdAt: -1 });
+          })
+            .populate('children')
+            .sort({ createdAt: -1 })
+            .lean();
+
+          console.log(meVenues);
 
           return meVenues;
+        } catch (err) {
+          console.log(err);
+          throw new ApolloError(err);
+        }
+      },
+    ),
+    meEvents: combineResolvers(
+      isAuthenticated,
+      async (parent, { id }, { models, me }) => {
+        try {
+          if (!me) {
+            return null;
+          }
+          const meEvents = await models.Event.find({
+            userId: me.id,
+          })
+            // .populate('parent')
+            .sort({ createdAt: -1 })
+            .lean();
+
+          return meEvents;
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -175,7 +202,7 @@ export default {
                 populate: {
                   path: 'job',
                   populate: {
-                    path: 'company',
+                    path: 'parent',
                   },
                 },
               },
@@ -189,9 +216,15 @@ export default {
                   path: 'venue',
                 },
               },
-            });
-
-          console.log('USER', user.saved);
+              populate: {
+                path: 'events',
+                options: { sort: { createdAt: -1 } },
+                populate: {
+                  path: 'event',
+                },
+              },
+            })
+            .lean();
 
           return user.saved;
         } catch (err) {

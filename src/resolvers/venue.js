@@ -50,7 +50,8 @@ export default {
             {
               sort: { featured: -1, publishedAt: -1 },
               select:
-                'id title slug logo tags types location status publishedAt featured',
+                'id title slug image tags types location status publishedAt featured',
+              populate: 'children',
               limit: limit,
               page: cursor || 1,
               lean: true,

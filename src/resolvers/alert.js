@@ -25,8 +25,6 @@ export default {
             },
           });
 
-          console.log(user.alerts);
-
           return user.alerts;
         } catch (err) {
           console.log(err);
@@ -64,8 +62,6 @@ export default {
             slug: generateSlug(),
             ...input,
           });
-
-          console.log(input);
 
           const user = await models.User.findByIdAndUpdate(me.id, {
             $addToSet: { [`alerts.${alert.alertType}s`]: alert.id },
@@ -179,11 +175,10 @@ export default {
 
           const alert = await models.Alert.findById(
             id,
-            (err, doc) => {
+            (err, item) => {
               if (err) console.log(err);
-              console.log(doc);
-              doc.active = !doc.active;
-              doc.save();
+              item.active = !item.active;
+              item.save();
             },
           );
 
@@ -201,8 +196,6 @@ export default {
       async (parent, { id }, { models, me }) => {
         try {
           const alert = await models.Alert.findById(id);
-
-          console.log('ALERT', alert);
 
           const { alertType } = alert;
 

@@ -50,8 +50,8 @@ export default {
             {
               sort: { featured: -1, publishedAt: -1 },
               select:
-                'id title company slug tags types location status publishedAt featured',
-              populate: 'company',
+                'id title parent slug tags types location status publishedAt featured',
+              populate: 'parent',
               limit: limit,
               page: cursor || 1,
               lean: true,
@@ -88,7 +88,7 @@ export default {
         const job = await models.Job.findOne({
           slug: slug,
         })
-          .populate('company')
+          .populate('parent')
           .lean();
 
         return job;
@@ -128,22 +128,22 @@ export default {
           if (input.status === 'published' && !me.verified)
             throw new ApolloError('Not verified');
 
-          const company = await models.Company.findOne({
+          const parent = await models.Company.findOne({
             userId: me.id,
           });
 
           const job = await models.Job.create({
             ...input,
-            company: company,
-            companyName: company.name,
+            parent: input.parent,
+            parentName: input.parent.title,
             publishedAt:
               input.status === 'published' ? new Date() : null,
             slug: generateSlug(input.title),
             userId: me.id,
           });
 
-          company.jobs.push(job);
-          company.save();
+          parent.jobs.push(job);
+          parent.save();
 
           return await job;
         } catch (err) {
@@ -174,7 +174,7 @@ export default {
               ...input,
             },
             { new: true },
-          ).populate('company');
+          ).populate('parent');
 
           if (input.status === 'published' && !job.publishedAt) {
             job.publishedAt = new Date();
@@ -231,7 +231,14 @@ export default {
         try {
           const job = await models.Job.findById(id);
 
-          if (job) {
+          const company = await models.Company.findByIdAndUpdate(
+            job.parent,
+            {
+              $pull: { children: job.id },
+            },
+          );
+
+          if (job && company) {
             await job.remove();
             return true;
           } else {

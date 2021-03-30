@@ -64,6 +64,25 @@ export const isVenueOwner = async (
   return skip;
 };
 
+export const isEventOwner = async (
+  parent,
+  { id },
+  { models, me },
+) => {
+  const event = await models.Event.findById(id)
+    .populate('parent')
+    .lean();
+
+  console.log('event', event);
+  console.log(me);
+
+  if (event.parent.userId != me.id) {
+    throw new ForbiddenError('Not authenticated as owner.');
+  }
+
+  return skip;
+};
+
 export const isOwner = async (parent, { id }, { models, me }) => {
   const user = await models.User.findById(me.id).lean();
   if (user.id != me.id) {

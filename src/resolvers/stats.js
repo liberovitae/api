@@ -60,6 +60,35 @@ export default {
             return false;
           }
         }
+
+        if (itemType === 'event') {
+          if (eventType === 'page') {
+            const event = await models.Event.findOneAndUpdate(
+              {
+                slug: slug,
+              },
+              { $inc: { 'stats.views': 1 } },
+            );
+
+            if (event) return true;
+
+            return false;
+          }
+
+          if (eventType === 'track') {
+            const event = await models.Event.findOneAndUpdate(
+              {
+                slug: slug,
+              },
+              { $inc: { 'stats.visits': 1 } },
+            );
+
+            if (event) return true;
+
+            return false;
+          }
+        }
+        return false;
       } catch (err) {
         console.log(err);
       }
