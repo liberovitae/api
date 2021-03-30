@@ -30,12 +30,12 @@ const searchJobs = async ({
     {
       $lookup: {
         from: 'companies',
-        localField: 'company',
+        localField: 'parent',
         foreignField: '_id',
-        as: 'company',
+        as: 'parent',
       },
     },
-    { $unwind: '$company' },
+    { $unwind: '$parent' },
   ]);
 };
 
