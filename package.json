@@ -54,6 +54,7 @@
     "graphql-resolvers": "^0.4.2",
     "graphql-upload": "^11.0.0",
     "jsonwebtoken": "^8.4.0",
+    "migrate-mongo": "^8.2.2",
     "moment": "^2.29.1",
     "mongodb-cron": "^1.7.0",
     "mongoose": "^5.11.9",
