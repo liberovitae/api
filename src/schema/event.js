@@ -23,17 +23,30 @@ export default gql`
     keywords: String
     location: EventLocationInput
     types: [String]
+    dates: EventDatesInput
   }
 
   input EventInput {
     title: String!
+    parent: ID!
+    dates: EventDatesInput!
     location: EventLocationInput!
-    logo: String
+    image: String
     description: String!
     url: String!
     types: [String!]
     tags: [String!]
     status: String!
+  }
+
+  input EventDatesInput {
+    start: Date
+    end: Date
+  }
+
+  type EventDates {
+    start: Date
+    end: Date
   }
 
   type EventConnection @cacheControl(maxAge: 60) {
@@ -44,7 +57,9 @@ export default gql`
   type Event @cacheControl(maxAge: 60) {
     id: ID!
     title: String!
-    logo: String
+    dates: EventDates!
+    parent: Venue!
+    image: String
     location: EventLocation!
     description: String!
     url: String!
@@ -55,8 +70,6 @@ export default gql`
     slug: String!
     status: String!
     featured: Boolean
-    userId: ID
-    venueId: ID
     stats: Stats
   }
 

@@ -7,8 +7,8 @@ export default gql`
 
   extend type Mutation {
     createCompany(
-      name: String!
-      logo: String
+      title: String!
+      image: String
       website: String
       tagline: String
       twitter: String
@@ -17,8 +17,8 @@ export default gql`
     deleteCompany(id: ID!): Boolean!
     updateCompany(
       id: ID!
-      name: String!
-      logo: String
+      title: String!
+      image: String
       website: String
       tagline: String
       twitter: String
@@ -28,8 +28,8 @@ export default gql`
 
   type CompanyInput {
     id: ID
-    name: String!
-    logo: String
+    title: String!
+    image: String
     website: String
     tagline: String
     twitter: String
@@ -38,8 +38,8 @@ export default gql`
 
   type Company @cacheControl(maxAge: 60) {
     id: ID!
-    name: String!
-    logo: String
+    title: String!
+    image: String
     website: String
     tagline: String
     twitter: String

@@ -8,6 +8,7 @@ export default gql`
     meCounts: Counts!
     meJobs: [Job!] @cacheControl(maxAge: 0)
     meVenues: [Venue!] @cacheControl(maxAge: 0)
+    meEvents: [Event!] @cacheControl(maxAge: 0)
     savedItems: SavedItems!
     nearestCity(lat: Float!, lon: Float!): City!
   }
@@ -47,16 +48,19 @@ export default gql`
   type SavedCounts {
     jobs: Int
     venues: Int
+    events: Int
   }
 
   type AlertCounts {
     jobs: Int
     venues: Int
+    events: Int
   }
 
   type SavedItems {
     jobs: [SavedJob]
     venues: [SavedVenue]
+    events: [SavedEvent]
   }
 
   type SavedJob {
@@ -71,6 +75,12 @@ export default gql`
     reminder: ID
   }
 
+  type SavedEvent {
+    createdAt: Date
+    event: Event!
+    reminder: ID
+  }
+
   type User @cacheControl(maxAge: 0) {
     id: ID!
     username: String!
@@ -80,5 +90,6 @@ export default gql`
     jobs: [Job]
     verified: Boolean!
     company: Company
+    venues: [Venue]
   }
 `;

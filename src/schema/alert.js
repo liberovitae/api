@@ -15,7 +15,7 @@ export default gql`
 
   type Alert {
     id: ID!
-    name: String!
+    title: String!
     alertType: String!
     slug: String!
     keywords: String
@@ -32,11 +32,12 @@ export default gql`
   type Alerts {
     jobs: [Alert]
     venues: [Alert]
+    events: [Alert]
   }
 
   input AlertInput {
     id: ID
-    name: String!
+    title: String!
     alertType: String!
     keywords: String
     location: String

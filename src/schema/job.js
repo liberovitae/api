@@ -49,7 +49,7 @@ export default gql`
   type Job @cacheControl(maxAge: 60) {
     id: ID!
     title: String!
-    company: Company!
+    parent: Company!
     location: JobLocation!
     description: String!
     url: String!

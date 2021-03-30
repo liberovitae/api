@@ -28,7 +28,7 @@ export default gql`
   input VenueInput {
     title: String!
     location: VenueLocationInput!
-    logo: String
+    image: String
     description: String!
     url: String!
     types: [String!]
@@ -44,12 +44,13 @@ export default gql`
   type Venue @cacheControl(maxAge: 60) {
     id: ID!
     title: String!
-    logo: String
+    image: String
     location: VenueLocation!
     description: String!
     url: String!
     types: [String!]
     tags: [String!]
+    children: [Event]
     createdAt: Date!
     publishedAt: Date
     slug: String!
