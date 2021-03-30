@@ -15,7 +15,7 @@ mongoose.set(
 );
 
 const connectDb = () => {
-  if (process.env.DATABASE_URL) {
+  if (process.env.DATABASE_HOST) {
     return mongoose.connect(
       `${process.env.DATABASE_HOST}/${process.env.DATABASE_NAME}`,
       {
