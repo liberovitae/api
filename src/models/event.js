@@ -102,7 +102,7 @@ eventSchema.plugin(mongoosePaginate);
 eventSchema.plugin(beautifyUnique);
 
 eventSchema.statics.search = async function (
-  { keywords, location, types },
+  { keywords, location, types, dates },
   limit,
   cursor,
 ) {
@@ -114,6 +114,7 @@ eventSchema.statics.search = async function (
 
   let keywordsQuery;
   let typesQuery;
+  let datesQuery;
 
   keywords.length
     ? (keywordsQuery = {
@@ -137,6 +138,23 @@ eventSchema.statics.search = async function (
       })
     : null;
 
+  dates.start && dates.end
+    ? (datesQuery = {
+        $or: [
+          {
+            'dates.start': {
+              $gte: new Date(new Date(dates.start).setHours(0, 0, 0)),
+            },
+            'dates.end': {
+              $lte: new Date(
+                new Date(dates.end).setHours(23, 59, 59),
+              ),
+            },
+          },
+        ],
+      })
+    : null;
+
   const searchAggregate = this.aggregate([
     {
       $match: {
@@ -149,6 +167,7 @@ eventSchema.statics.search = async function (
               },
             ],
           },
+          { ...datesQuery },
           {
             'location.name': {
               $regex: location.name,
