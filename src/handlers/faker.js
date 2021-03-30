@@ -1,10 +1,10 @@
 import models from '../models';
 import jobTypes from '../constants/jobTypes';
 import venueTypes from '../constants/venueTypes';
+import eventTypes from '../constants/eventTypes';
 import cities from 'all-the-cities';
 import faker from 'faker';
 import generateSlug from './generateSlug';
-import moment from 'moment';
 
 const createFakeUser = async () => {
   try {
@@ -34,10 +34,10 @@ const createFakeUser = async () => {
 const createFakeCompany = async (user) => {
   try {
     const fakeCompany = {
-      name: faker.company.companyName(),
+      title: faker.company.companyName(),
       image: faker.image.business(200, 200, true),
       website: faker.internet.url(),
-      tagline: faker.lorem.sentence(),
+      tagline: faker.hacker.phrase(),
       userId: user._id,
     };
 
@@ -111,10 +111,9 @@ const createFakeJob = async (user, company) => {
     };
 
     const job = await models.Job.create({
-      userId: user.id,
       slug: generateSlug(fakeJob.title),
       parent: company._id,
-      parentName: company.name,
+      parentName: company.title,
       status: 'published',
       publishedAt: Date.now(),
       ...fakeJob,
@@ -159,7 +158,7 @@ const createFakeVenue = async (user) => {
     }
 
     const fakeVenue = {
-      title: faker.company.companyName(),
+      title: faker.commerce.productName(),
       location: location,
       description: `<h1>${faker.lorem.words(6)}</h1>
       <p>
@@ -185,17 +184,17 @@ const createFakeVenue = async (user) => {
       tags: tags,
     };
 
-    const job = await models.Venue.create({
+    const venue = await models.Venue.create({
       userId: user.id,
       slug: generateSlug(fakeVenue.title),
       status: 'published',
-      image: faker.image.business(200, 200, true),
+      image: faker.image.city(200, 200, true),
       publishedAt: Date.now(),
       ...fakeVenue,
     });
 
-    if (job) {
-      return job;
+    if (venue) {
+      return venue;
     } else {
       return false;
     }
@@ -205,7 +204,7 @@ const createFakeVenue = async (user) => {
   }
 };
 
-const createFakeEvent = async (user) => {
+const createFakeEvent = async (venue) => {
   try {
     const fakeCity =
       cities[Math.floor(Math.random() * cities.length)];
@@ -232,19 +231,10 @@ const createFakeEvent = async (user) => {
       };
     }
 
-    const randomDate = (start, end, startHour, endHour) => {
-      var date = new Date(+start + Math.random() * (end - start));
-      var hour =
-        (startHour + Math.random() * (endHour - startHour)) | 0;
-      date.setHours(hour);
-      return date;
-    };
-
-    const startDate = new Date();
-    const maxEndDate = moment(startDate).add(1, 'year');
+    const startDate = faker.date.recent();
 
     const fakeEvent = {
-      title: faker.company.companyName(),
+      title: `${faker.music.genre()} ${faker.address.city()} ${faker.commerce.product()} ${faker.date.weekday()}`,
       location: location,
       description: `<h1>${faker.lorem.words(6)}</h1>
       <p>
@@ -262,7 +252,7 @@ const createFakeEvent = async (user) => {
       <p>Contact: ${faker.internet.email()} or ${faker.phone.phoneNumber()}
       `,
       types:
-        venueTypes[Math.floor(Math.random() * venueTypes.length)],
+        eventTypes[Math.floor(Math.random() * eventTypes.length)],
       url:
         Math.random() < 0.5
           ? faker.internet.url()
@@ -271,16 +261,16 @@ const createFakeEvent = async (user) => {
     };
 
     const event = await models.Event.create({
-      userId: user.id,
       slug: generateSlug(fakeEvent.title),
       status: 'published',
       dates: {
         start: startDate,
-        end: randomDate(startDate, maxEndDate),
+        end: faker.date.soon(3, startDate),
       },
-      image: faker.image.business(200, 200, true),
+      parent: venue,
+      image: faker.image.nightlife(200, 200, true),
       publishedAt: Date.now(),
-      ...fakeVenue,
+      ...fakeEvent,
     });
 
     if (event) {
