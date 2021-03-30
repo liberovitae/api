@@ -138,25 +138,24 @@ eventSchema.statics.search = async function (
       })
     : null;
 
-  dates.start && dates.end
+  dates?.start && dates?.end
     ? (datesQuery = {
         $or: [
           {
             'dates.start': {
-              $gte: new Date(new Date(dates.start).setHours(0, 0, 0)),
+              $gte: new Date(
+                new Date(dates?.start).setHours(0, 0, 0),
+              ),
             },
             'dates.start': {
               $lte: new Date(
-                new Date(dates.end).setHours(23, 59, 59),
+                new Date(dates?.end).setHours(23, 59, 59),
               ),
             },
             'dates.end': {
               $lte: new Date(
-                new Date(dates.end).setHours(23, 59, 59),
+                new Date(dates?.end).setHours(23, 59, 59),
               ),
-            },
-            'dates.end': {
-              $gte: new Date(new Date(dates.start).setHours(0, 0, 0)),
             },
           },
         ],
