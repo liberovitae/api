@@ -138,29 +138,61 @@ eventSchema.statics.search = async function (
       })
     : null;
 
-  dates?.start && dates?.end
-    ? (datesQuery = {
-        $or: [
+  const dateRangeQuery = {
+    'dates.start': {
+      $gte: new Date(new Date(dates.start).setHours(0, 0, 0)),
+    },
+
+    'dates.end': {
+      $lte: new Date(new Date(dates.end).setHours(23, 59, 59)),
+    },
+  };
+
+  const sameDateQuery = {
+    $or: [
+      {
+        $and: [
           {
             'dates.start': {
-              $gte: new Date(
-                new Date(dates?.start).setHours(0, 0, 0),
-              ),
-            },
-            'dates.start': {
               $lte: new Date(
-                new Date(dates?.end).setHours(23, 59, 59),
+                new Date(dates.start).setHours(23, 59, 59),
               ),
             },
             'dates.end': {
-              $lte: new Date(
-                new Date(dates?.end).setHours(23, 59, 59),
-              ),
+              $gte: new Date(new Date(dates.end).setHours(0, 0, 0)),
             },
           },
         ],
+      },
+      {
+        $and: [
+          {
+            'dates.start': {
+              $eq: new Date(new Date(dates.start).setHours(0, 0, 0)),
+            },
+            'dates.end': {
+              $eq: new Date(new Date(dates.end).setHours(23, 59, 59)),
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  const buildDateQuery =
+    JSON.stringify(dates.start) === JSON.stringify(dates.end)
+      ? sameDateQuery
+      : dateRangeQuery;
+
+  console.log(buildDateQuery);
+
+  dates?.start && dates?.end
+    ? (datesQuery = {
+        ...buildDateQuery,
       })
     : null;
+
+  console.log('DATESQUERY', JSON.stringify(datesQuery));
 
   const searchAggregate = this.aggregate([
     {
@@ -197,7 +229,7 @@ eventSchema.statics.search = async function (
 
     { $unwind: '$parent' },
 
-    { $sort: { featured: -1, publishedAt: -1 } },
+    { $sort: { featured: -1, 'dates.start': -1, publishedAt: -1 } },
     {
       $project: {
         id: 1,
