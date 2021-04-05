@@ -2,8 +2,6 @@ import models from '../../models';
 import { createEmail } from '../email';
 import { config } from 'dotenv';
 import { triggerPushMsg } from '../pushNotifications';
-import searchJobs from './jobs';
-import searchVenues from './venues';
 
 const env = process.env.NODE_ENV;
 config({ path: `./.env.${env}` });
@@ -13,18 +11,13 @@ export const TaskHandler = async ({ input }) => {
     const task = await models.Task.findById(input._id)
       .populate('user')
       .populate('alert')
-      .populate('job')
-      .populate('venue');
+      .populate('post');
 
-    const { job, venue, user } = task;
+    const { post, user } = task;
 
     if (task) {
       if (task.type === 'reminder') {
         const email = await createEmail();
-        let itemType;
-
-        if (job) itemType = 'job';
-        if (venue) itemType = 'venue';
 
         return email
           .send({
@@ -37,9 +30,8 @@ export const TaskHandler = async ({ input }) => {
               sitename: process.env.SITE_NAME,
               hostname: process.env.HOSTNAME,
               username: user.username,
-              item: job || venue,
-              type: itemType,
-              location: job.company.name || venue.location.name,
+              post: post,
+              location: post.location.name,
             },
           })
           .then(() => {
@@ -50,64 +42,17 @@ export const TaskHandler = async ({ input }) => {
 
       if (task.type === 'alert') {
         const { alert } = task;
-        const { keywords, types, location, alertType } = alert;
+        const { keywords, types, location, alertType, dates } = alert;
 
-        let items;
+        const posts = await models.Post.search({
+          keywords,
+          types,
+          location,
+          dates,
+          type: alertType,
+        });
 
-        let keywordsQuery;
-        let typesQuery;
-        let locationQuery;
-
-        keywords.length
-          ? (keywordsQuery = {
-              $or: [
-                {
-                  $text: { $search: `"${keywords}"` },
-                },
-              ],
-            })
-          : null;
-
-        types.length
-          ? (typesQuery = {
-              types: {
-                $not: {
-                  $elemMatch: {
-                    $nin: types,
-                  },
-                },
-              },
-            })
-          : null;
-
-        location.length
-          ? (locationQuery = {
-              'location.name': {
-                $regex: location.name,
-                $options: 'i',
-              },
-            })
-          : null;
-
-        if (alertType === 'job') {
-          items = await searchJobs({
-            keywordsQuery,
-            typesQuery,
-            locationQuery,
-            task,
-          });
-        }
-
-        if (alertType === 'venue') {
-          items = await searchVenues({
-            keywordsQuery,
-            typesQuery,
-            locationQuery,
-            task,
-          });
-        }
-
-        if (items && items.length) {
+        if (posts && posts.length) {
           if (alert.notification && user.subscription) {
             triggerPushMsg(
               user.subscription,
@@ -120,13 +65,11 @@ export const TaskHandler = async ({ input }) => {
             );
           }
 
-          console;
-
           if (alert.email) {
             const email = await createEmail();
             email
               .send({
-                template: 'items',
+                template: 'posts',
                 message: {
                   from: `${process.env.SITE_NAME} <no-reply@liberovitae.com>`,
                   to: user.email,
@@ -135,7 +78,7 @@ export const TaskHandler = async ({ input }) => {
                   sitename: process.env.SITE_NAME,
                   hostname: process.env.HOSTNAME,
                   username: user.username,
-                  items: items,
+                  posts: posts,
                   type: alertType,
                   alert: alert,
                 },
