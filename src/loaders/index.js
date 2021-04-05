@@ -1,4 +1,4 @@
 import * as user from './user';
-import * as company from './company';
+import * as post from './post';
 
-export default { user, company };
+export default { user, post };
