@@ -4,11 +4,10 @@ import isUrl from 'validator/lib/isURL';
 import aggregatePaginate from 'mongoose-aggregate-paginate-v2';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import beautifyUnique from 'mongoose-beautiful-unique-validation';
-import { eventTypes } from '../constants/eventTypes';
 
-function tagLimit(val) {
+const tagLimit = (val) => {
   return val.length <= 10;
-}
+};
 
 const urlValidator = (value) => {
   if (!value) return true;
@@ -18,13 +17,24 @@ const urlValidator = (value) => {
   return false;
 };
 
-const eventSchema = new mongoose.Schema(
+const postSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      required: true,
+      index: true,
+      enum: ['job', 'venue', 'event', 'company', 'blog'],
+    },
     parent: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Venue',
-      required: true,
+      ref: 'Post',
     },
+    children: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+      },
+    ],
     title: {
       type: String,
       required: true,
@@ -38,10 +48,10 @@ const eventSchema = new mongoose.Schema(
       index: true,
     },
     dates: {
-      start: { type: Date, required: true },
-      end: { type: Date, required: true },
+      start: { type: Date, default: null },
+      end: { type: Date, default: null },
     },
-    description: {
+    text: {
       type: String,
       required: true,
       trim: true,
@@ -65,22 +75,33 @@ const eventSchema = new mongoose.Schema(
         { validator: urlValidator, msg: 'Invalid URL/Email address' },
       ],
     },
-    types: {
-      type: [String],
-      enum: eventTypes,
-      required: true,
-      index: true,
-    },
+    types: [
+      {
+        type: String,
+        required: true,
+        index: true,
+      },
+    ],
+
     tags: {
-      type: Array,
-      required: true,
+      type: [
+        {
+          type: String,
+          required: true,
+        },
+      ],
       validate: [tagLimit, '{PATH} exceeds the limit of 10'],
     },
 
     status: {
       type: String,
-      enum: ['draft', 'published', 'inactive'],
+      enum: ['draft', 'published', 'inactive', 'filled'],
       default: 'draft',
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
     featured: Boolean,
     image: String,
@@ -90,19 +111,28 @@ const eventSchema = new mongoose.Schema(
       visits: { type: Number, default: 0 },
       saves: { type: Number, default: 0 },
     },
+    commentsEnabled: { type: Boolean, default: false },
+    comments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+      },
+    ],
+    commentCount: { type: Number, default: 0 },
   },
   {
     timestamps: true,
   },
 );
 
-eventSchema.plugin(aggregatePaginate);
-eventSchema.plugin(mongoosePaginate);
+postSchema.plugin(aggregatePaginate);
+postSchema.plugin(mongoosePaginate);
 // Enable beautifying on this schema
-eventSchema.plugin(beautifyUnique);
+postSchema.plugin(beautifyUnique);
 
-eventSchema.statics.search = async function (
-  { keywords, location, types, dates },
+postSchema.statics.search = async function (
+  { keywords, location, types, dates, publishedAt },
+  type,
   limit,
   cursor,
 ) {
@@ -115,6 +145,7 @@ eventSchema.statics.search = async function (
   let keywordsQuery;
   let typesQuery;
   let datesQuery;
+  let publishedAtQuery;
 
   keywords.length
     ? (keywordsQuery = {
@@ -138,15 +169,22 @@ eventSchema.statics.search = async function (
       })
     : null;
 
-  const dateRangeQuery = {
-    'dates.start': {
-      $gte: new Date(new Date(dates.start).setHours(0, 0, 0)),
-    },
+  publishedAt
+    ? (publishedAtQuery = { publishedAt: { $gt: task.updatedAt } })
+    : null;
 
-    'dates.end': {
-      $lte: new Date(new Date(dates.end).setHours(23, 59, 59)),
-    },
-  };
+  const dateRangeQuery =
+    dates?.start && dates?.end
+      ? {
+          'dates.start': {
+            $gte: new Date(new Date(dates.start).setHours(0, 0, 0)),
+          },
+
+          'dates.end': {
+            $lte: new Date(new Date(dates.end).setHours(23, 59, 59)),
+          },
+        }
+      : null;
 
   const sameDateQuery = {
     $or: [
@@ -155,11 +193,11 @@ eventSchema.statics.search = async function (
           {
             'dates.start': {
               $lte: new Date(
-                new Date(dates.start).setHours(23, 59, 59),
+                new Date(dates?.start).setHours(23, 59, 59),
               ),
             },
             'dates.end': {
-              $gte: new Date(new Date(dates.end).setHours(0, 0, 0)),
+              $gte: new Date(new Date(dates?.end).setHours(0, 0, 0)),
             },
           },
         ],
@@ -168,10 +206,12 @@ eventSchema.statics.search = async function (
         $and: [
           {
             'dates.start': {
-              $eq: new Date(new Date(dates.start).setHours(0, 0, 0)),
+              $eq: new Date(new Date(dates?.start).setHours(0, 0, 0)),
             },
             'dates.end': {
-              $eq: new Date(new Date(dates.end).setHours(23, 59, 59)),
+              $eq: new Date(
+                new Date(dates?.end).setHours(23, 59, 59),
+              ),
             },
           },
         ],
@@ -180,11 +220,9 @@ eventSchema.statics.search = async function (
   };
 
   const buildDateQuery =
-    JSON.stringify(dates.start) === JSON.stringify(dates.end)
+    JSON.stringify(dates?.start) === JSON.stringify(dates?.end)
       ? sameDateQuery
       : dateRangeQuery;
-
-  console.log(buildDateQuery);
 
   dates?.start && dates?.end
     ? (datesQuery = {
@@ -192,12 +230,11 @@ eventSchema.statics.search = async function (
       })
     : null;
 
-  console.log('DATESQUERY', JSON.stringify(datesQuery));
-
   const searchAggregate = this.aggregate([
     {
       $match: {
         $and: [
+          { type: type },
           { ...keywordsQuery },
           {
             $and: [
@@ -214,31 +251,37 @@ eventSchema.statics.search = async function (
             },
           },
           { status: 'published' },
+          { ...publishedAtQuery },
         ],
       },
     },
 
     {
       $lookup: {
-        from: 'venues',
+        from: 'posts',
         localField: 'parent',
         foreignField: '_id',
         as: 'parent',
       },
     },
 
-    { $unwind: '$parent' },
+    {
+      $unwind: { path: '$parent', preserveNullAndEmptyArrays: true },
+    },
 
-    { $sort: { featured: -1, 'dates.start': -1, publishedAt: -1 } },
+    { $sort: { featured: -1, publishedAt: -1 } },
     {
       $project: {
         id: 1,
         title: 1,
+        type: 1,
         'parent.title': 1,
         image: 1,
         slug: 1,
         dates: 1,
         tags: 1,
+        commentCount: 1,
+        commentsEnabled: 1,
         types: 1,
         location: 1,
         status: 1,
@@ -251,7 +294,7 @@ eventSchema.statics.search = async function (
   return await this.aggregatePaginate(searchAggregate, options);
 };
 
-eventSchema.index({
+postSchema.index({
   title: 'text',
   tags: 'text',
   'location.name': 'text',
@@ -261,15 +304,15 @@ eventSchema.index({
   status: 1,
 });
 
-const Event = mongoose.model('Event', eventSchema);
+const Post = mongoose.model('Post', postSchema);
 
-Event.createIndexes({
+Post.createIndexes({
   collation: {
     locale: 'en',
     strength: 2,
   },
 });
 
-export { eventSchema };
+export { postSchema };
 
-export default Event;
+export default Post;

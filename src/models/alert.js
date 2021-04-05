@@ -4,7 +4,7 @@ const alertSchema = new mongoose.Schema(
   {
     alertType: {
       type: String,
-      enum: ['job', 'venue'],
+      enum: ['job', 'venue', 'event'],
     },
     title: {
       type: String,
@@ -26,6 +26,10 @@ const alertSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    dates: {
+      start: { type: Date, default: null },
+      end: { type: Date, default: null },
     },
     frequency: {
       type: String,

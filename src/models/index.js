@@ -1,17 +1,16 @@
 import mongoose from 'mongoose';
 import User from './user';
-import Job from './job';
-import Company from './company';
 import File from './file';
 import Task from './task';
 import Alert from './alert';
-import Blog from './blog';
-import Venue from './venue';
-import Event from './event';
+import Post from './post';
+import Comment from './comment';
 
 mongoose.set(
   'debug',
-  process.env.NODE_ENV === 'development' ? true : false,
+  process.env.NODE_ENV === 'development' && !process.env.FAKE_DATA
+    ? true
+    : false,
 );
 
 const connectDb = () => {
@@ -29,14 +28,11 @@ const connectDb = () => {
 
 const models = {
   User,
-  Job,
-  Company,
   File,
   Task,
   Alert,
-  Blog,
-  Venue,
-  Event,
+  Post,
+  Comment,
 };
 
 export { connectDb };
