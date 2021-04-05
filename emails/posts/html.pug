@@ -2,15 +2,15 @@ p Hi #{username},
 p The following #{type}s were found matching your #{alert.frequency} "#{alert.name}" #{type} alert subscription:
 
 div
-    each item in items
-           p --- #{item.title} ---
+    each post in posts
+           p --- #{post.title} ---
             br
-            | Location: #{item.location.name}
+            | Location: #{post.location.name}
             br
-            | Keywords: #{item.tags}
+            | Keywords: #{post.tags}
             br
             | View #{type}: 
-            a(href=hostname + `/${type}/` + item.slug) #{hostname}/#{type}/#{item.slug}
+            a(href=hostname + `/${type}/` + post.slug) #{hostname}/#{type}/#{post.slug}
 
 p To manage your #{type} alerts please visit: 
     a(href=hostname + '/account/alerts') #{hostname}/account/alerts
