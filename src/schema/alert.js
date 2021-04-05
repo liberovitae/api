@@ -2,7 +2,7 @@ import { gql } from 'apollo-server-express';
 
 export default gql`
   extend type Query {
-    alerts: Alerts!
+    alerts: [Alert]!
     alert(slug: String!): Alert!
   }
 
@@ -29,12 +29,6 @@ export default gql`
     createdAt: Date!
   }
 
-  type Alerts {
-    jobs: [Alert]
-    venues: [Alert]
-    events: [Alert]
-  }
-
   input AlertInput {
     id: ID
     title: String!
@@ -47,23 +41,5 @@ export default gql`
     email: Boolean!
     notification: Boolean!
     subscription: SubscriptionInput
-  }
-
-  type Subscription {
-    endpoint: String!
-    expirationTime: String
-    p256dh: String!
-    auth: String!
-  }
-
-  input KeysInput {
-    p256dh: String!
-    auth: String!
-  }
-
-  input SubscriptionInput {
-    endpoint: String!
-    expirationTime: String
-    keys: KeysInput!
   }
 `;

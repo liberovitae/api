@@ -1,15 +1,11 @@
 import { gql } from 'apollo-server-express';
-
 import userSchema from './user';
-import jobSchema from './job';
-import companySchema from './company';
 import uploadSchema from './upload';
 import alertSchema from './alert';
 import locationSchema from './location';
-import blogSchema from './blog';
-import venueSchema from './venue';
-import eventSchema from './event';
+import postSchema from './post';
 import statsSchema from './stats';
+import commentSchema from './comment';
 
 const linkSchema = gql`
   scalar Date
@@ -31,13 +27,10 @@ const linkSchema = gql`
 export default [
   linkSchema,
   userSchema,
-  jobSchema,
-  companySchema,
   uploadSchema,
   alertSchema,
   locationSchema,
-  blogSchema,
-  venueSchema,
-  eventSchema,
+  postSchema,
   statsSchema,
+  commentSchema,
 ];

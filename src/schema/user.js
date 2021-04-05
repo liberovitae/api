@@ -5,12 +5,9 @@ export default gql`
     users(limit: Int): [User!]
     user(id: ID!): User
     me: User
-    meCounts: Counts!
-    meJobs: [Job!] @cacheControl(maxAge: 0)
-    meVenues: [Venue!] @cacheControl(maxAge: 0)
-    meEvents: [Event!] @cacheControl(maxAge: 0)
-    savedItems: SavedItems!
-    nearestCity(lat: Float!, lon: Float!): City!
+    myCounts: Counts!
+    myPosts(type: String): [Post!] @cacheControl(maxAge: 0)
+    savedPosts: [SavedPost]
   }
 
   extend type Mutation {
@@ -27,8 +24,8 @@ export default gql`
       newPassword: String!
     ): Boolean!
     deleteUser(id: ID!): Boolean!
-    saveItem(id: ID!, itemType: String!, reminder: Boolean): Boolean
-    deleteSavedItem(id: ID!, itemType: String!): Boolean!
+    savePost(id: ID!, reminder: Boolean): Boolean
+    deleteSavedPost(id: ID!): Boolean!
     requestReset(email: String!): Boolean!
     resetPassword(token: String!, password: String!): Boolean!
     revertEmail: Boolean!
@@ -39,46 +36,33 @@ export default gql`
   }
 
   type Counts {
-    alerts: AlertCounts
-    jobs: Int
-    saved: SavedCounts
-    venues: Int
+    alerts: Int
+    posts: Int
+    saved: Int
   }
 
-  type SavedCounts {
-    jobs: Int
-    venues: Int
-    events: Int
-  }
-
-  type AlertCounts {
-    jobs: Int
-    venues: Int
-    events: Int
-  }
-
-  type SavedItems {
-    jobs: [SavedJob]
-    venues: [SavedVenue]
-    events: [SavedEvent]
-  }
-
-  type SavedJob {
+  type SavedPost {
     createdAt: Date
-    job: Job!
+    post: Post!
     reminder: ID
   }
 
-  type SavedVenue {
-    createdAt: Date
-    venue: Venue!
-    reminder: ID
+  type Subscription {
+    endpoint: String!
+    expirationTime: String
+    p256dh: String!
+    auth: String!
   }
 
-  type SavedEvent {
-    createdAt: Date
-    event: Event!
-    reminder: ID
+  input KeysInput {
+    p256dh: String!
+    auth: String!
+  }
+
+  input SubscriptionInput {
+    endpoint: String!
+    expirationTime: String
+    keys: KeysInput!
   }
 
   type User @cacheControl(maxAge: 0) {
@@ -87,9 +71,7 @@ export default gql`
     email: String!
     secondaryEmail: String
     role: String!
-    jobs: [Job]
     verified: Boolean!
-    company: Company
-    venues: [Venue]
+    saved: [SavedPost]
   }
 `;
