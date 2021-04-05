@@ -4,22 +4,21 @@ import { Feed } from 'feed';
 const RSSFeed = async (req, res, next) => {
   console.log(req, res);
   const feed = new Feed({
-    title: 'liberovitae.com RSS Feed',
+    title: `${process.env.SITE_NAME} RSS Feed`,
     link: process.env.HOSTNAME,
-    description: 'liberovitae.com latest 100 jobs',
+    description: `${process.env.SITE_NAME} latest 100 posts`,
   });
 
-  return await models.Job.find({ status: 'published' })
+  return await models.Post.find({ status: 'published' })
     .sort({ publishedAt: -1 })
     .limit(100)
-    .populate('company')
-    .then((jobs) => {
-      jobs.forEach((job) => {
-        console.log(job);
+    .populate('parent')
+    .then((posts) => {
+      posts.forEach((post) => {
         feed.addItem({
-          title: job.title,
-          content: `${job.title} @ ${job.company.name} - ${job.location.name}`,
-          link: `${process.env.HOSTNAME}/job/${job.slug}`,
+          title: post.title,
+          content: `${post.title} @ ${post.parent.title} - ${post.location.name}`,
+          link: `${process.env.HOSTNAME}/${post.type}/${post.slug}`,
         });
       });
       return res.send(feed.rss2());
