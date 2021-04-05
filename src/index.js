@@ -176,11 +176,8 @@ const server = new ApolloServer({
       return {
         models,
         loaders: {
-          job: new DataLoader((keys) =>
-            loaders.job.batchJobs(keys, models),
-          ),
-          company: new DataLoader((keys) =>
-            loaders.company.batchCompanies(keys, models),
+          posts: new DataLoader((keys) =>
+            loaders.post.batchPosts(keys, models),
           ),
         },
       };
@@ -250,16 +247,16 @@ connectDb().then(async (data) => {
     lockDuration: 600000,
   });
 
-  const jobsCron = new MongoCron({
-    collection: data.connection.db.collection('jobs'),
+  const postsCron = new MongoCron({
+    collection: data.connection.db.collection('posts'),
     onDocument: async (job) => {
       models.Jobs.findByIdAndUpdate(job._id, {
         status: 'inactive',
       });
     }, // triggered on job processing/
     onError: async (err) => console.log(err),
-    onStart: () => console.log('Jobs cron started ...'),
-    onStop: () => console.log('Jobs cron stopped'),
+    onStart: () => console.log('Posts cron started ...'),
+    onStop: () => console.log('Posts cron stopped'),
     nextDelay: 1000,
     reprocessDelay: 1000,
     idleDelay: 10000,
@@ -268,7 +265,7 @@ connectDb().then(async (data) => {
 
   taskCron.start(); // start processing
   userCron.start();
-  jobsCron.start();
+  postsCron.start();
 
   httpServer.listen({ port }, () => {
     console.log(`Apollo Server on http://localhost:${port}/graphql`);
