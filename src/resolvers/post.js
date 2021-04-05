@@ -4,11 +4,9 @@ import { getGraphQLRateLimiter } from 'graphql-rate-limit';
 import {
   isAuthenticated,
   isVerified,
-  isJobOwner,
+  isPostOwner,
 } from './authorization';
 import { ApolloError } from 'apollo-server';
-import INITIAL_STATE from '../constants/initialSearchFilter';
-import cities from 'all-the-cities';
 import generateSlug from '../handlers/generateSlug';
 
 const rateLimiter = getGraphQLRateLimiter({
@@ -17,41 +15,36 @@ const rateLimiter = getGraphQLRateLimiter({
 
 export default {
   Query: {
-    jobs: async (
+    posts: async (
       parent,
-      { key, filter, cursor, limit = 20, cache },
+      { type, filter, cursor, limit = 20, cache },
       { redis, models },
       info,
     ) => {
       try {
+        console.log('tyPE', type);
+
         cache
           ? info.cacheControl.setCacheHint({ maxAge: 60 })
           : info.cacheControl.setCacheHint({ maxAge: 0 });
-        const jobCount = await models.Job.countDocuments({
-          status: 'published',
-        }).maxTimeMS(100);
-
-        if (!jobCount) throw new Error('NOCOUNT');
 
         let results;
 
-        if (
-          filter &&
-          JSON.stringify(filter) !== JSON.stringify(INITIAL_STATE)
-        ) {
-          results = await models.Job.search(
-            filter || INITIAL_STATE,
+        if (filter) {
+          results = await models.Post.search(
+            filter,
+            type,
             limit,
             cursor,
           );
         } else {
-          results = await models.Job.paginate(
-            { status: 'published' },
+          results = await models.Post.paginate(
+            { type, status: 'published' },
             {
               sort: { featured: -1, publishedAt: -1 },
-              select:
-                'id title parent slug tags types location status publishedAt featured',
               populate: 'parent',
+              select:
+                'id title type dates slug parent image tags types location status publishedAt featured',
               limit: limit,
               page: cursor || 1,
               lean: true,
@@ -62,6 +55,10 @@ export default {
             },
           );
         }
+
+        console.log(results);
+
+        if (!results.totalDocs) throw new Error('NOCOUNT');
 
         if (results) {
           const { docs, hasNextPage, nextPage, totalDocs } = results;
@@ -80,30 +77,18 @@ export default {
         throw new ApolloError(err);
       }
     },
-    job: async (parent, { slug, cache }, { models }, info) => {
+    post: async (parent, { slug, cache }, { models }, info) => {
       try {
         cache
           ? info.cacheControl.setCacheHint({ maxAge: 60 })
           : info.cacheControl.setCacheHint({ maxAge: 0 });
-        const job = await models.Job.findOne({
+        const post = await models.Post.findOne({
           slug: slug,
         })
           .populate('parent')
+          .populate('comments')
           .lean();
-
-        return job;
-      } catch (err) {
-        console.log(err);
-        throw new ApolloError(err);
-      }
-    },
-    location: async (parent, { location }, { models }) => {
-      try {
-        const cityTag = location.split(',')[0];
-        const foundCities = cities.filter((city) =>
-          city.name.match(new RegExp(cityTag, 'i')),
-        );
-        return foundCities;
+        return post;
       } catch (err) {
         console.log(err);
         throw new ApolloError(err);
@@ -112,40 +97,44 @@ export default {
   },
 
   Mutation: {
-    createJob: combineResolvers(
+    createPost: combineResolvers(
       isAuthenticated,
       async (parent, args, context, info) => {
         try {
           const { input } = args;
           const { models, me } = context;
           const errorMessage = await rateLimiter(
-            { parent, args, context, info },
+            { args, context, info },
             { max: 10, window: '60s' },
           );
 
           if (errorMessage) throw new Error(errorMessage);
 
+          // Handle our verification here to allow draft posts.
           if (input.status === 'published' && !me.verified)
             throw new ApolloError('Not verified');
 
-          const parent = await models.Company.findOne({
-            userId: me.id,
-          });
-
-          const job = await models.Job.create({
+          const post = await models.Post.create({
             ...input,
-            parent: input.parent,
-            parentName: input.parent.title,
             publishedAt:
               input.status === 'published' ? new Date() : null,
             slug: generateSlug(input.title),
             userId: me.id,
           });
 
-          parent.jobs.push(job);
-          parent.save();
+          const parent = await models.Post.findByIdAndUpdate(
+            input.parent,
+            {
+              $addToSet: { children: post.id },
+            },
+          );
 
-          return await job;
+          const user = await models.User.findByIdAndUpdate(me.id, {
+            $addToSet: { posts: post.id },
+          });
+
+          if (post && user) return post;
+          return false;
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -153,10 +142,9 @@ export default {
       },
     ),
 
-    updateJob: combineResolvers(
+    updatePost: combineResolvers(
       isAuthenticated,
       isVerified,
-      isJobOwner,
       async (parent, args, context, info) => {
         try {
           const { id, input } = args;
@@ -168,21 +156,20 @@ export default {
 
           if (errorMessage) throw new Error(errorMessage);
 
-          const job = await models.Job.findOneAndUpdate(
-            { _id: id },
+          const post = await models.Post.findOneAndUpdate(
+            { id },
             {
               ...input,
             },
             { new: true },
-          ).populate('parent');
+          );
 
-          if (input.status === 'published' && !job.publishedAt) {
-            job.publishedAt = new Date();
-            job.save();
+          if (input.status === 'published' && !post.publishedAt) {
+            post.publishedAt = new Date();
+            posts.save();
           }
 
-          console.log(job);
-          return await job;
+          return await post;
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -190,10 +177,9 @@ export default {
       },
     ),
 
-    setJobStatus: combineResolvers(
+    setPostStatus: combineResolvers(
       isAuthenticated,
       isVerified,
-      isJobOwner,
       async (parent, args, context, info) => {
         try {
           const { id, status } = args;
@@ -204,7 +190,7 @@ export default {
           );
 
           if (errorMessage) throw new Error(errorMessage);
-          const job = await models.Job.findByIdAndUpdate(
+          const post = await models.Post.findByIdAndUpdate(
             id,
             {
               status: status,
@@ -212,7 +198,7 @@ export default {
             { new: true },
           );
 
-          if (job) {
+          if (post) {
             return true;
           } else {
             return false;
@@ -224,22 +210,22 @@ export default {
       },
     ),
 
-    deleteJob: combineResolvers(
+    deletePost: combineResolvers(
       isAuthenticated,
-      isJobOwner,
+      isPostOwner,
       async (parent, { id }, { models }) => {
         try {
-          const job = await models.Job.findById(id);
+          const post = await models.Post.findById(id);
 
-          const company = await models.Company.findByIdAndUpdate(
-            job.parent,
+          const parent = await models.Post.findByIdAndUpdate(
+            post.parent,
             {
-              $pull: { children: job.id },
+              $pull: { children: post.id },
             },
           );
 
-          if (job && company) {
-            await job.remove();
+          if (post) {
+            await post.remove();
             return true;
           } else {
             return false;
@@ -252,7 +238,7 @@ export default {
     ),
   },
 
-  Job: {
+  Post: {
     id: (parent, args, { models }) => parent._id,
   },
 };

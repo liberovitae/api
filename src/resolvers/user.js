@@ -82,7 +82,7 @@ export default {
         throw new ApolloError(err);
       }
     },
-    meCounts: combineResolvers(
+    myCounts: combineResolvers(
       isAuthenticated,
       async (parent, args, { models, me }) => {
         try {
@@ -90,26 +90,13 @@ export default {
             return false;
           }
 
-          const user = await models.User.findById(me.id)
-            .populate('company')
-            .lean();
+          const user = await models.User.findById(me.id).lean();
 
           if (user) {
             return {
-              jobs: user.company ? user.company.jobs.length : 0,
-              venues: user.venues ? user.venues.length : 0,
-              saved: {
-                jobs: user.saved?.jobs ? user.saved.jobs.length : 0,
-                venues: user.saved?.venues
-                  ? user.saved.venues.length
-                  : 0,
-              },
-              alerts: {
-                jobs: user.alerts?.jobs ? user.alerts.jobs.length : 0,
-                venues: user.alerts?.venues
-                  ? user.alerts.venues.length
-                  : 0,
-              },
+              posts: user.posts?.length || 0,
+              alerts: user.alerts?.length || 0,
+              saved: user.saved?.length || 0,
             };
           } else {
             return false;
@@ -120,65 +107,39 @@ export default {
         }
       },
     ),
-    meJobs: combineResolvers(
+
+    myPosts: combineResolvers(
       isAuthenticated,
-      async (parent, { id }, { models, me }) => {
+      async (parent, { type }, { models, me }) => {
         try {
           if (!me) {
             return null;
           }
-          const meJobs = await models.Job.find({
-            userId: me.id,
-          })
-            .populate('company')
-            .sort({ createdAt: -1 })
+
+          let typeQuery;
+
+          type
+            ? (typeQuery = {
+                match: {
+                  type: type,
+                },
+              })
+            : null;
+
+          const { posts } = await models.User.findById(me.id)
+            .populate({
+              path: 'posts',
+              match: { parent: null },
+              ...typeQuery,
+              options: { sort: { createdAt: -1 } },
+              populate: {
+                path: 'children',
+                options: { sort: { createdAt: -1 } },
+              },
+            })
             .lean();
 
-          return meJobs;
-        } catch (err) {
-          console.log(err);
-          throw new ApolloError(err);
-        }
-      },
-    ),
-    meVenues: combineResolvers(
-      isAuthenticated,
-      async (parent, { id }, { models, me }) => {
-        try {
-          if (!me) {
-            return null;
-          }
-          const meVenues = await models.Venue.find({
-            userId: me.id,
-          })
-            .populate('children')
-            .sort({ createdAt: -1 })
-            .lean();
-
-          console.log(meVenues);
-
-          return meVenues;
-        } catch (err) {
-          console.log(err);
-          throw new ApolloError(err);
-        }
-      },
-    ),
-    meEvents: combineResolvers(
-      isAuthenticated,
-      async (parent, { id }, { models, me }) => {
-        try {
-          if (!me) {
-            return null;
-          }
-          const meEvents = await models.Event.find({
-            userId: me.id,
-          })
-            // .populate('parent')
-            .sort({ createdAt: -1 })
-            .lean();
-
-          return meEvents;
+          return posts;
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -186,7 +147,7 @@ export default {
       },
     ),
 
-    savedItems: combineResolvers(
+    savedPosts: combineResolvers(
       isAuthenticated,
       async (parent, { id }, { models, me }) => {
         try {
@@ -196,38 +157,18 @@ export default {
           const user = await models.User.findById(me.id)
             .populate({
               path: 'saved',
+              options: { sort: { createdAt: -1 } },
               populate: {
-                path: 'jobs',
-                options: { sort: { createdAt: -1 } },
+                path: 'post',
                 populate: {
-                  path: 'job',
-                  populate: {
-                    path: 'parent',
-                  },
+                  path: 'parent',
                 },
               },
             })
-            .populate({
-              path: 'saved',
-              populate: {
-                path: 'venues',
-                options: { sort: { createdAt: -1 } },
-                populate: {
-                  path: 'venue',
-                },
-              },
-            })
-            .populate({
-              path: 'saved',
-              populate: {
-                path: 'events',
-                options: { sort: { createdAt: -1 } },
-                populate: {
-                  path: 'event',
-                },
-              },
-            })
+
             .lean();
+
+          console.log(user);
 
           return user.saved;
         } catch (err) {
@@ -236,24 +177,24 @@ export default {
         }
       },
     ),
-    nearestCity: async (parent, { lat, lon }, { models }) => {
-      try {
-        const query = {
-          latitude: lat,
-          longitude: lon,
-        };
-        const cities = nearbyCities(query);
+    // nearestCity: async (parent, { lat, lon }, { models }) => {
+    //   try {
+    //     const query = {
+    //       latitude: lat,
+    //       longitude: lon,
+    //     };
+    //     const cities = nearbyCities(query);
 
-        const nearestBigCity = cities
-          .slice(0, 19)
-          .sort(compareValues('population', 'desc'))[0];
+    //     const nearestBigCity = cities
+    //       .slice(0, 19)
+    //       .sort(compareValues('population', 'desc'))[0];
 
-        return nearestBigCity;
-      } catch (err) {
-        console.log(err);
-        throw new ApolloError(err);
-      }
-    },
+    //     return nearestBigCity;
+    //   } catch (err) {
+    //     console.log(err);
+    //     throw new ApolloError(err);
+    //   }
+    // },
   },
 
   Mutation: {
@@ -425,16 +366,16 @@ export default {
       },
     ),
 
-    saveItem: combineResolvers(
+    savePost: combineResolvers(
       isAuthenticated,
-      async (parent, { id, itemType, reminder }, { models, me }) => {
+      async (parent, { id, reminder }, { models, me }) => {
         try {
           let reminderId;
 
           if (reminder) {
             reminderId = await models.Task.create({
               type: 'reminder',
-              [itemType]: id,
+              post: id,
               user: me.id,
               sleepUntil: moment().add(7, 'days').toDate(),
             });
@@ -444,8 +385,8 @@ export default {
             me.id,
             {
               $addToSet: {
-                [`saved.${itemType}s`]: {
-                  [itemType]: id,
+                saved: {
+                  post: id,
                   reminder: reminderId,
                 },
               }, // Use addToSet to prevent duplicates in array (FIXME)
@@ -453,17 +394,9 @@ export default {
             { new: true },
           );
 
-          if (itemType === 'job') {
-            await models.Job.findByIdAndUpdate(id, {
-              $inc: { 'stats.saves': 1 },
-            });
-          }
-
-          if (itemType === 'venue') {
-            await models.Venue.findByIdAndUpdate(id, {
-              $inc: { 'stats.saves': 1 },
-            });
-          }
+          await models.Post.findByIdAndUpdate(id, {
+            $inc: { 'stats.saves': 1 },
+          });
 
           if (user) {
             return true;
@@ -477,7 +410,7 @@ export default {
       },
     ),
 
-    deleteSavedItem: combineResolvers(
+    deleteSavedPost: combineResolvers(
       isAuthenticated,
       async (parent, { id, itemType }, { models, me }) => {
         try {
@@ -603,15 +536,5 @@ export default {
 
   User: {
     id: (parent, args, { models }) => parent._id,
-    jobs: async (user, args, { models }) => {
-      try {
-        return await models.Job.find({
-          userId: user.id,
-        });
-      } catch (err) {
-        console.log(err);
-        throw new ApolloError(err);
-      }
-    },
   },
 };

@@ -19,10 +19,6 @@ export default {
           }
           const user = await models.User.findById(me.id).populate({
             path: 'alerts',
-
-            populate: {
-              path: 'jobs venues',
-            },
           });
 
           return user.alerts;
@@ -175,10 +171,10 @@ export default {
 
           const alert = await models.Alert.findById(
             id,
-            (err, item) => {
+            (err, alert) => {
               if (err) console.log(err);
-              item.active = !item.active;
-              item.save();
+              alert.active = !alert.active;
+              alert.save();
             },
           );
 
