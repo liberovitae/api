@@ -43,7 +43,7 @@ const dataTypes = [
   {
     title: () =>
       `${faker.address.city()} ${faker.commerce.department()} ${
-        Math.random() < 0.5 && faker.date.weekday()
+        Math.random() < 0.5 ? faker.date.weekday() : ''
       }`,
     image: () => faker.image.nightlife(200, 200, true),
 
@@ -197,15 +197,15 @@ const createCompleteFake = async () => {
     const spinner = ora('Creating fake data').start();
 
     // Create users
-    // for (let step = 0; step < LIMIT; step++) {
-    // spinner.text = 'Creating fake users'
+    for (let step = 0; step < LIMIT; step++) {
+      spinner.text = `Creating fake users [${step}/${LIMIT}]`;
 
-    //   const user = await createFakeUser();
-    // }
+      const user = await createFakeUser();
+    }
 
     // Create parent posts
     for (let step = 0; step < LIMIT; step++) {
-      spinner.text = 'Creating fake parent posts';
+      spinner.text = `Creating fake parent posts [${step}/${LIMIT}]`;
 
       const dataType = await dataTypePicker(true);
 
@@ -225,7 +225,7 @@ const createCompleteFake = async () => {
 
     // Create child posts
     for (let step = 0; step < LIMIT; step++) {
-      spinner.text = 'Creating fake child posts';
+      spinner.text = `Creating fake child posts [${step}/${LIMIT}]`;
 
       const dataType = await dataTypePicker();
 
