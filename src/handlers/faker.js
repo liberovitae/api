@@ -191,6 +191,31 @@ const dataTypePicker = async (parent) => {
   return children[Math.floor(Math.random() * children.length)];
 };
 
+const createFakeComment = async ({ user, postId, parent, depth }) => {
+  try {
+    const fakeComment = {
+      author: {
+        id: user.id,
+        username: user.username,
+      },
+      text: faker.hacker.phrase(),
+      postId,
+      parent,
+      depth,
+    };
+
+    const comment = await models.Comment.create(fakeComment);
+
+    if (comment) {
+      return comment;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 const createCompleteFake = async () => {
   const LIMIT = 250;
   try {
@@ -250,8 +275,77 @@ const createCompleteFake = async () => {
       user.save();
     }
 
+    // Create parent comments
+    for (let step = 0; step < LIMIT; step++) {
+      spinner.text = `Creating fake parent comments [${step}/${LIMIT}]`;
+
+      const randomPosts = await models.Post.aggregate([
+        { $match: { commentsEnabled: true } },
+        { $sample: { size: 1 } },
+      ]);
+
+      const randomUsers = await models.User.aggregate([
+        { $sample: { size: 1 } },
+      ]);
+
+      const user = await models.User.findOne(randomUsers[0]._id);
+
+      const comment = await createFakeComment({
+        user,
+        postId: randomPosts[0]._id,
+      });
+
+      await models.Post.findByIdAndUpdate(randomPosts[0]._id, {
+        $addToSet: { comments: comment },
+        $inc: {
+          commentCount: 1,
+        },
+      });
+
+      user.comments.push(comment);
+      user.save();
+    }
+
+    // Create child comments
+    for (let step = 0; step < LIMIT * 2; step++) {
+      spinner.text = `Creating fake child comments [${step}/${
+        LIMIT * 2
+      }]`;
+
+      const randomUsers = await models.User.aggregate([
+        { $sample: { size: 1 } },
+      ]);
+
+      const randomComment = await models.Comment.aggregate([
+        { $sample: { size: 1 } },
+      ]);
+
+      const user = await models.User.findOne(randomUsers[0]._id);
+
+      const parent = await models.Comment.findOne(
+        randomComment[0]._id,
+      );
+
+      const comment = await createFakeComment({
+        user,
+        parent,
+        postId: parent.postId,
+        depth: parent.depth + 1,
+      });
+
+      await models.Post.findByIdAndUpdate(comment.postId, {
+        $addToSet: { comments: comment },
+        $inc: {
+          commentCount: 1,
+        },
+      });
+      parent.children.push(comment);
+      user.comments.push(comment);
+      user.save();
+      parent.save();
+    }
+
     spinner.stop();
-    // Create comment threads
   } catch (err) {
     console.log(err);
     return false;
