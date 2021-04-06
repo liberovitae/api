@@ -73,5 +73,6 @@ export default gql`
     role: String!
     verified: Boolean!
     saved: [SavedPost]
+    posts: [Post]
   }
 `;

@@ -36,10 +36,15 @@ export default gql`
     pageInfo: PageInfo!
   }
 
+  type CommentAuthor {
+    id: ID!
+    username: String!
+  }
+
   type Comment @cacheControl(maxAge: 60) {
     id: ID!
     text: String!
-    author: User!
+    author: CommentAuthor!
     postId: ID!
     parentId: ID
     depth: Int!
