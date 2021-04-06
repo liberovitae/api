@@ -194,9 +194,6 @@ const server = new ApolloServer({
           user: new DataLoader((keys) =>
             loaders.user.batchUsers(keys, models),
           ),
-          // company: new DataLoader((keys) =>
-          //   loaders.company.batchCompanies(keys, models),
-          // ),
         },
       };
     }
@@ -249,8 +246,8 @@ connectDb().then(async (data) => {
 
   const postsCron = new MongoCron({
     collection: data.connection.db.collection('posts'),
-    onDocument: async (job) => {
-      models.Jobs.findByIdAndUpdate(job._id, {
+    onDocument: async (post) => {
+      models.Post.findByIdAndUpdate(post._id, {
         status: 'inactive',
       });
     }, // triggered on job processing/
