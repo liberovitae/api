@@ -1,4 +1,4 @@
-export const batchJobs = async (keys, models) => {
+export const batchPosts = async (keys, models) => {
   const posts = await models.Post.find({
     _id: {
       $in: keys,
