@@ -119,11 +119,24 @@ const postSchema = new mongoose.Schema(
       },
     ],
     commentCount: { type: Number, default: 0 },
+    sleepUntil: {
+      // Sleeper for inactivity and auto removal
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   },
 );
+
+postSchema.pre('remove', function (next) {
+  this.model('Post').findOneAndUpdate(
+    { parent: this.parent },
+    { $pull: { children: this._id } },
+    next,
+  );
+});
 
 postSchema.plugin(aggregatePaginate);
 postSchema.plugin(mongoosePaginate);
