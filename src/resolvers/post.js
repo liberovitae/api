@@ -22,11 +22,15 @@ export default {
       info,
     ) => {
       try {
-        console.log('tyPE', type);
-
         cache
           ? info.cacheControl.setCacheHint({ maxAge: 60 })
           : info.cacheControl.setCacheHint({ maxAge: 0 });
+
+        const postCount = await models.Post.countDocuments({
+          type,
+        }).maxTimeMS(100);
+
+        if (!postCount) throw new Error('NOCOUNT');
 
         let results;
 
@@ -56,10 +60,6 @@ export default {
           );
         }
 
-        console.log(results);
-
-        if (!results.totalDocs) throw new Error('NOCOUNT');
-
         if (results) {
           const { docs, hasNextPage, nextPage, totalDocs } = results;
           const edges = docs;
@@ -83,9 +83,10 @@ export default {
           ? info.cacheControl.setCacheHint({ maxAge: 60 })
           : info.cacheControl.setCacheHint({ maxAge: 0 });
         const post = await models.Post.findOne({
-          slug: slug,
+          slug,
         })
           .populate('parent')
+          .populate('children')
           .populate('comments')
           .lean();
         return post;
@@ -113,6 +114,13 @@ export default {
           // Handle our verification here to allow draft posts.
           if (input.status === 'published' && !me.verified)
             throw new ApolloError('Not verified');
+
+          // Add 2 month timer for auto inactivity of jobs
+          if (input.type === 'job') {
+            input.sleepUntil = moment(new Date())
+              .add(2, 'months')
+              .toDate();
+          }
 
           const post = await models.Post.create({
             ...input,
@@ -157,7 +165,7 @@ export default {
           if (errorMessage) throw new Error(errorMessage);
 
           const post = await models.Post.findOneAndUpdate(
-            { id },
+            id,
             {
               ...input,
             },
@@ -166,7 +174,7 @@ export default {
 
           if (input.status === 'published' && !post.publishedAt) {
             post.publishedAt = new Date();
-            posts.save();
+            post.save();
           }
 
           return await post;
@@ -193,7 +201,7 @@ export default {
           const post = await models.Post.findByIdAndUpdate(
             id,
             {
-              status: status,
+              status,
             },
             { new: true },
           );
@@ -213,9 +221,16 @@ export default {
     deletePost: combineResolvers(
       isAuthenticated,
       isPostOwner,
-      async (parent, { id }, { models }) => {
+      async (parent, { id }, { models, me }) => {
         try {
           const post = await models.Post.findById(id);
+
+          const user = await models.User.findByIdAndUpdate(
+            post.userId,
+            {
+              $pull: { posts: post.id },
+            },
+          );
 
           const parent = await models.Post.findByIdAndUpdate(
             post.parent,
