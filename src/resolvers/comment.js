@@ -31,17 +31,15 @@ export default {
 
         if (!commentCount) throw new Error('NOCOUNT');
 
-        console.log('POSTID', postId);
         const results = await models.Comment.paginate(
           { postId: postId, depth: 0 },
           {
-            sort: { depth: 1, createdAt: -1 },
+            sort: { createdAt: -1 },
             select:
-              'id text author depth createdAt slug postId parentId children',
-            // populate: {
-            //   path: 'children',
-            //   options: { sort: { createdAt: -1 } },
-            // },
+              'id text author depth createdAt slug postId parentId children deleted',
+            populate: {
+              path: 'author',
+            },
             limit: limit,
             page: cursor || 1,
             lean: true,
@@ -55,42 +53,6 @@ export default {
         if (results) {
           const { docs, hasNextPage, nextPage } = results;
           const edges = docs;
-
-          //   let rec = (comment, threads) => {
-          //     let value;
-          //     for (var thread in threads) {
-          //       value = threads[thread];
-
-          //       if (thread.toString() === comment.parentId.toString()) {
-          //         value.children[comment.id] = comment;
-          //         return;
-          //       }
-
-          //       if (value.children) {
-          //         rec(comment, value.children);
-          //       }
-          //     }
-          //   };
-
-          //   let commentsArr = [];
-          //   let threads = {},
-          //     comment;
-
-          //   for (let i = 0; i < edges.length; i++) {
-          //     comment = edges[i];
-          //     comment['children'] = [];
-          //     let parentId = comment.parentId;
-          //     if (!parentId) {
-          //       threads[comment.id] = comment;
-          //       continue;
-          //     }
-          //     rec(comment, threads);
-          //   }
-
-          //   for (let comment of Object.values(threads)) {
-          //     commentsArr.push(comment);
-
-          //   }
 
           console.log(edges);
 
@@ -255,24 +217,28 @@ export default {
     deleteComment: combineResolvers(
       isAuthenticated,
       isCommentOwner,
-      async (parent, { id }, { models }) => {
+      async (parent, { id }, { models, me }) => {
         try {
           const comment = await models.Comment.findById(id);
 
-          const post = await models.Post.findByIdAndUpdate(
-            comment.postId,
-            {
-              $pull: {
-                comments: comment.id,
-              },
-              $inc: {
-                commentCount: -1,
-              },
-            },
-          );
+          // const post = await models.Post.findByIdAndUpdate(
+          //   comment.postId,
+          //   {
+          //     $pull: {
+          //       comments: comment.id,
+          //     },
+          //     $inc: {
+          //       commentCount: -1,
+          //     },
+          //   },
+          // );
+
+          if (comment.deleted)
+            throw new ApolloError('Comment deleted');
 
           if (comment) {
-            await comment.remove();
+            comment.text = 'Deleted';
+            comment.delete(me.id);
             return true;
           } else {
             return false;
