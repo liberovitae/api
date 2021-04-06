@@ -73,7 +73,7 @@ export default {
           return null;
         }
         const user = await models.User.findById(me.id)
-          .populate('company venues')
+          .populate('posts')
           .lean();
 
         return user;
