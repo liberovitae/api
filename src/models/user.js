@@ -52,10 +52,7 @@ const userSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Reminder',
         },
-        createdAt: {
-          type: Date,
-          default: new Date(),
-        },
+        createdAt: Date,
       },
     ],
     posts: [
