@@ -13,7 +13,7 @@ import {
   ResetPassword,
   ChangeEmail,
 } from '../handlers/email';
-import nearbyCities from 'nearby-cities';
+// import nearbyCities from 'nearby-cities';
 
 const createToken = async (user, secret, expiresIn) => {
   const { id, email, username, role, verified } = user;
@@ -154,10 +154,10 @@ export default {
           if (!me) {
             return null;
           }
+
           const user = await models.User.findById(me.id)
             .populate({
               path: 'saved',
-              options: { sort: { createdAt: -1 } },
               populate: {
                 path: 'post',
                 populate: {
@@ -168,9 +168,8 @@ export default {
 
             .lean();
 
-          console.log(user);
-
-          return user.saved;
+          // Reverse our saved posts array to put latest at top
+          return user.saved.reverse();
         } catch (err) {
           console.log(err);
           throw new ApolloError(err);
@@ -388,11 +387,12 @@ export default {
                 saved: {
                   post: id,
                   reminder: reminderId,
+                  createdAt: new Date(),
                 },
               }, // Use addToSet to prevent duplicates in array (FIXME)
             },
             { new: true },
-          );
+          ).lean();
 
           await models.Post.findByIdAndUpdate(id, {
             $inc: { 'stats.saves': 1 },
@@ -412,28 +412,23 @@ export default {
 
     deleteSavedPost: combineResolvers(
       isAuthenticated,
-      async (parent, { id, itemType }, { models, me }) => {
+      async (parent, { id }, { models, me }) => {
         try {
-          const { saved } = await models.User.findOne(
-            { _id: me.id },
-            {
-              [`saved.${itemType}s`]: 1,
-            },
-          );
+          const user = await models.User.findByIdAndUpdate(me.id, {
+            $pull: { saved: { post: id } },
+          }).lean();
 
-          const savedObj = Object.assign(
-            ...saved[`${itemType}s`],
-            {},
-          );
+          const { saved } = user;
 
-          if (savedObj.reminder) {
-            await models.Task.findByIdAndDelete(savedObj.reminder);
+          const savedPost = saved.filter(
+            (saved) => saved.post.toString() === id,
+          )[0];
+
+          if (savedPost.reminder) {
+            await models.Task.findByIdAndDelete(savedPost.reminder);
           }
 
-          const user = await models.User.findByIdAndUpdate(me.id, {
-            $pull: { [`saved.${itemType}s`]: { [itemType]: id } },
-          });
-          if (savedObj) {
+          if (savedPost && user) {
             return true;
           } else {
             return false;
