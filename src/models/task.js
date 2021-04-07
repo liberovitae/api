@@ -7,8 +7,7 @@ const taskSchema = new mongoose.Schema(
       enum: ['reminder', 'alert'],
       required: true,
     },
-    job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
-    venue: { type: mongoose.Schema.Types.ObjectId, ref: 'Venue' },
+    post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
     alert: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Alert',
